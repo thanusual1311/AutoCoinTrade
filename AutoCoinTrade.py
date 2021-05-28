@@ -36,12 +36,18 @@ def handler(update, context):
                        "d : delete target coin\n"+
                        "    ex) d 1 (1번 타겟코인 DELETE)\n"+
                        "c : max buy coin\n" +
-                       "    ex) c 1 (최대 투자 코인 수)")
+                       "    ex) c 1 (최대 투자 코인 수)\n" +
+                       "w : 투자 기동 여부\n" +
+                       "    ex) w 0 (투자 기동 종료)\n" +
+                       "    ex) w 1 (투자 기동 실행)")
+
     elif user_text_header == "T":
         # target coin list
         global max_buy_target_cnt
+        global DO_WORK
         ackTelegramMSG(list_to_strings("내 타겟 코인", my_target_coin_list))
         ackTelegramMSG("최대 투자 코인 타입수  : " + str(max_buy_target_cnt))
+        ackTelegramMSG("투자 기동 여부  : " + str(DO_WORK))
     elif user_text_header == "I":
         # 타겟코인 추가
         try:
@@ -90,6 +96,18 @@ def handler(update, context):
             s = user_text.split()
             max_buy_target_cnt = int(s[1])
             ackTelegramMSG("최대 투자 코인 타입수  : " + str(max_buy_target_cnt))
+        except:
+            ackTelegramMSG("명령을 이해하지 못했습니다.")
+            pass
+    elif user_text_header == "W":
+        # 최대 투자 코인 타입수
+        try:
+            s = user_text.split()
+            if int(s[1]) == 0:
+                DO_WORK = False
+            else:
+                DO_WORK = True
+            ackTelegramMSG("투자 기동 여부  : " + DO_WORK)
         except:
             ackTelegramMSG("명령을 이해하지 못했습니다.")
             pass
@@ -197,11 +215,13 @@ ackTelegramMSG("********  HELP : 'h' or 'H'  ********")
 my_balance_list = get_my_balance_list()
 tick_banlance = upbit.get_balance("KRW")
 
+DO_WORK = True
+
 while True:
     now = datetime.datetime.now()
     mid = datetime.datetime(now.year, now.month, now.day)
     mid = mid + datetime.timedelta(seconds=1)
-    if mid < now < mid + datetime.timedelta(seconds=10):
+    if mid < now < mid + datetime.timedelta(seconds=10) and DO_WORK:
         if sellOk == False:
             my_balance_list = get_my_balance_list()
             if my_balance_list is not None: # 보유코인이 있다면
@@ -221,7 +241,7 @@ while True:
                     except:
                         pass
             sellOk = True
-    elif mid + datetime.timedelta(seconds=10) < now < mid + datetime.timedelta(seconds=20):
+    elif mid + datetime.timedelta(seconds=10) < now < mid + datetime.timedelta(seconds=20) and DO_WORK:
         if buyOk == False:
             tick_banlance = upbit.get_balance("KRW")  # 한화 보유액
             # krw_per_each = int(int(int(tick_banlance) / 10000) / max_buy_target_cnt) * 10000   # 한화 보유액을 최대 투자 코인수로 나눔. 만원미만 절사
@@ -281,6 +301,3 @@ while True:
         sellOk = False
 
     time.sleep(1)
-
-
-
