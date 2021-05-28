@@ -107,7 +107,7 @@ def handler(update, context):
                 DO_WORK = False
             else:
                 DO_WORK = True
-            ackTelegramMSG("투자 기동 여부  : " + DO_WORK)
+            ackTelegramMSG("투자 기동 여부  : " + str(DO_WORK))
         except:
             ackTelegramMSG("명령을 이해하지 못했습니다.")
             pass
