@@ -200,6 +200,7 @@ tick_banlance = upbit.get_balance("KRW")
 while True:
     now = datetime.datetime.now()
     mid = datetime.datetime(now.year, now.month, now.day)
+    mid = mid + datetime.timedelta(seconds=1)
     if mid < now < mid + datetime.timedelta(seconds=10):
         if sellOk == False:
             my_balance_list = get_my_balance_list()
