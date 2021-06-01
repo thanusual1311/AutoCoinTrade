@@ -276,7 +276,7 @@ def get_ma3_rank(cnt = 300, rank_cnt = 10):
 
        dframe['hpr'] = dframe['ror'].cumprod()
 
-       hprs.append((tick, dframe['hpr'][-2], dframe['bull'][-2]))
+       hprs.append((tick, dframe['hpr'][-2], dframe['bull'][-1]))
 
    sorted_hprs = sorted(hprs, key=lambda x:x[1], reverse=True)
    sorted_hprs = sorted_hprs[:rank_cnt]
