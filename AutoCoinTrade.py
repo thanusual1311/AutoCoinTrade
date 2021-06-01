@@ -66,7 +66,10 @@ def handler(update, context):
                        "w : 투자 기동 여부\n" +
                        "    ex) w 0 (투자 기동 종료)\n" +
                        "    ex) w 1 (투자 기동 실행)\n" +
-                       "e : 긴급 전량 매도")
+                       "e : 긴급 전량 매도\n"
+                       "r : 수익률 랭킹 조회\n" +
+                       "    ex) r 300 10 (60분 캔들 300개 기준\n" +
+                       "                  랭킹 10위 조회)")
 
     elif user_text_header == "T":
         # target coin list
@@ -141,6 +144,17 @@ def handler(update, context):
     elif user_text_header == "E":
         sell_all_coin()
         ackTelegramMSG("전량매도 호출완료")
+    elif user_text_header == "R":
+        # 최대 투자 코인 타입수
+        try:
+            s = user_text.split()
+            if len(s) == 3:
+                ackTelegramMSG(get_ma3_rank(int(s[1]), int(s[2])))
+            else:
+                ackTelegramMSG("명령을 이해하지 못했습니다.")
+        except:
+            ackTelegramMSG("명령을 이해하지 못했습니다.")
+            pass
     else:
         # else
         ackTelegramMSG("명령을 이해하지 못했습니다.")
@@ -214,6 +228,63 @@ def ackTelegramMSG(strMSG):
     # strMSG = strMSG + " <" + datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S") + ">"
     bot.sendMessage(chat_id=telgm_chat_id, text=strMSG)
 
+def get_ma3_rank(cnt = 300, rank_cnt = 10):
+   """
+   한시간 봉을 받아 그룹핑 해서 일봉으로 만든다
+   일봉은 09시 기준이지만 00시에 동작하도록 하기 위함.
+   """
+   hprs = []
+
+   tickList = pyupbit.get_tickers("KRW")
+   for tick in tickList:
+       # dfup = pyupbit.get_ohlcv("KRW-"+tick,"minute60")
+       dfup = pyupbit.get_ohlcv(tick, "minute60", cnt)
+       dfup['N_INDEX'] = dfup.index
+       dfup['N_INDEX2'] = pd.to_datetime(dfup['N_INDEX'].dt.date)
+
+       df_MAX = dfup['high'].groupby(dfup["N_INDEX2"]).max()
+       df_MIN = dfup['low'].groupby(dfup["N_INDEX2"]).min()
+       df_cnt = dfup['open'].groupby(dfup["N_INDEX2"]).count()
+       dframe = pd.DataFrame(df_MAX)
+       dframe['low'] = pd.DataFrame(df_MIN)
+       dframe['cnt'] = pd.DataFrame(df_cnt)
+       dframe.insert(3, 'open', 0, True)
+       dframe.insert(4, 'close', 0, True)
+       dframe['N_INDEX'] = dframe.index
+
+       for i in dframe['N_INDEX']:
+           j = dfup[dfup['N_INDEX2'] == i]
+           open_val = j['open'][0]
+           close_val = j['close'][-1]
+           index_val = j['N_INDEX2'][0]
+           dframe['open'] = np.where(dframe['N_INDEX'] == index_val,
+                                     open_val,
+                                     dframe['open'])
+           dframe['close'] = np.where(dframe['N_INDEX'] == index_val,
+                                      close_val,
+                                      dframe['close'])
+
+       """
+       3일 기준 이동평균 계산 
+       """
+       dframe['ma3_close'] = dframe['close'].rolling(window=3).mean().shift(1)
+       dframe['bull'] = dframe['open'] > dframe['ma3_close']
+       fee = 0.0032
+       dframe['ror'] = np.where(dframe['bull'],
+                                dframe['close'] / dframe['open'] - fee,
+                                1)
+
+       dframe['hpr'] = dframe['ror'].cumprod()
+
+       hprs.append((tick, dframe['hpr'][-2], dframe['bull'][-2]))
+
+   sorted_hprs = sorted(hprs, key=lambda x:x[1], reverse=True)
+   sorted_hprs = sorted_hprs[:rank_cnt]
+   result_str = ""
+   for i in range(0, len(sorted_hprs)):
+       result_str = result_str + sorted_hprs[i][0] +", " + str(sorted_hprs[i][1]) + ", " + str(sorted_hprs[i][2]) + "\n"
+
+   return result_str
 
 tick = "XRP"
 
