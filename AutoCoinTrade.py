@@ -351,7 +351,7 @@ while True:
         if buyOk == False:
             tick_banlance = upbit.get_balance("KRW")  # 한화 보유액
             # krw_per_each = int(int(int(tick_banlance) / 10000) / max_buy_target_cnt) * 10000   # 한화 보유액을 최대 투자 코인수로 나눔. 만원미만 절사
-            krw_per_each = int(tick_banlance / max_buy_target_cnt)  # 한화 보유액을 최대 투자 코인수로 나눔. 소수점 버림
+            krw_per_each = int((tick_banlance - 10000) / max_buy_target_cnt)  # 한화 보유액에서 만원 빼고 최대 투자 코인수로 나눔. 소수점 버림
             buyOk_cnt = 0
 
             for k in range(0, len(my_target_coin_list)):
